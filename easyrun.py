@@ -2,10 +2,14 @@
 from __future__ import print_function
 from quickfiles import *
 from quickstructures import *
+from subprocess import *
 
 def easyrun(*cmd, **kwargs):
+    return easyrunto(cmd, **kwargs)(lambda x: None)
+
+def easyrunto(*cmd, **kwargs):
     wd = kwargs.get('wd', None)
-    return run(clean(cmd, wd), **kwargs)
+    return runto(clean(cmd, wd), **kwargs)
 
 def clean(cmd, wd=None, first=True):
     cleaned = []
@@ -27,35 +31,48 @@ def clean(cmd, wd=None, first=True):
         
     return t(cleaned)
 
-def run(cmd, echo=True, verbose=False, env={}, into=None, wd=None, wait=True, capture=False, stderr=None):
-    full_env = dict(os.environ)
-    for k in env: full_env[k] = env[k]
+def runto(cmd, wd=None, stderr=None, verbose=False, echo=True):
     if echo and not verbose:
         print('\033[34m' + abbrev(cmd) + '\033[0m', file=sys.stderr) # ]]
     elif echo:
         print('\033[34m' + str(cmd) + ' (in ' + str(wd) + ')' + '\033[0m', file=sys.stderr) # ]]
-    sys.stdout.flush()
-    if capture:
-        sink = PIPE
-    else:
-        sink = open(str(into), 'w') if into!=None else None
-    cwd = str(wd) if wd != None else None
-    if isinstance(stderr, basestring):
-        stderr = open(stderr, 'w')
-    proc = Popen(map(str, cmd), env=full_env, stdout=sink, stderr=stderr, cwd=cwd)
-    if wait:
-        code = proc.wait()
-        if into != None: sink.close()
-        if code != 0:
-            raise BuildFailed(' '.join(cmd) + ' returned ' + str(code) + ' exit status')
-        if capture:
-            return proc.communicate()[0]
-        else:
-            return None
-    else:
-        return None
-    
+    proc = Popen(cmd, stdout=PIPE, stderr=stderr, cwd=wd)
+    def next(f):
+        result = f(proc)
+        status = proc.wait()
+        if status != 0:
+            raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.')
+        return result
+    return next
+
 def abbrev(cmd):
     return p(cmd[0]).name + ' ... ' + ' '.join(p(_).name
         for _ in cmd[1:] if not _.startswith('-'))
+
+class RunFailed(Exception):
+    def __init__(self, msg):
+        Exception.__init__(self)
+        self.msg = msg
+    def __repr__(self): return self.msg
+    def __str__(self): return self.msg
+    
+def spy(hl, into=sys.stdout):
+    from fcntl import fcntl, F_GETFL, F_SETFL
+    from select import select
+    import os, sys
+
+    flags = fcntl(hl, F_GETFL)
+    fcntl(hl, F_SETFL, flags | os.O_NONBLOCK)
+
+    all = ''
+
+    while True:
+        select([hl], [], [])
+        data = hl.read()
+        if len(data) == 0: break
+        into.write(data)
+        into.flush()
+        all = all + data
+    
+    return all
 
