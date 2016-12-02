@@ -80,7 +80,16 @@ def runtty(cmd, wd=None, verbose=False, echo=True):
         print('\033[34m' + abbrev(cmd) + '\033[0m', file=sys.stderr) # ]]
     elif echo:
         print('\033[34m' + str(cmd) + ' (in ' + str(wd) + ')' + '\033[0m', file=sys.stderr) # ]]
-    proc = Popen(cmd, cwd=(str(wd) if wd!=None else None))
+    try:
+        proc = Popen(cmd, cwd=(str(wd) if wd!=None else None))
+    except OSError as e:
+        if e.errno == 2:
+            if len(cmd) > 0:
+                raise RunFailed('Could not find %s' % (cmd[0],))
+            else:
+                raise RunFailed('Empty command failed to run')
+        else:
+            raise e
     status = proc.wait()
     if status != 0:
         raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.')
