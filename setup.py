@@ -3,8 +3,8 @@
 from setuptools import setup
 
 setup(
-    name       = 'easyrun',
-    version    = '0.124',
+    name       = 'ellbur-easyrun',
+    version    = '0.125',
     py_modules = ['easyrun']
 )
 

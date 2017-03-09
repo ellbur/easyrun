@@ -66,7 +66,8 @@ def runto(cmd, wd=None, stderr=None, verbose=False, echo=True, known_as=None, ec
             print('\033[34m' + abbrev(cmd) + '\033[0m', file=sys.stderr) # ]]
     elif echo:
         print('\033[34m' + str(cmd) + ' (in ' + str(wd) + ')' + '\033[0m', file=sys.stderr) # ]]
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=stderr, cwd=(str(wd) if wd!=None else None))
+    stdout_arg = None if echo_output else PIPE
+    proc = Popen(cmd, stdin=PIPE, stdout=stdout_arg, stderr=stderr, cwd=(str(wd) if wd!=None else None))
     def next(f):
         result = f(proc)
         status = proc.wait()
