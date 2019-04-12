@@ -19,6 +19,12 @@ def easyrun(*cmd, **kwargs):
         return output
     return result
 
+def easyrun_as_proc(*cmd, **kwargs):
+    echo = kwargs.get('echo', True)
+    echo_output = kwargs.get('echo_output', True)
+    wd = kwargs.get('wd', None)
+    return run_as_proc(clean(cmd, wd), **kwargs)
+
 def easyrunto(*cmd, **kwargs):
     wd = kwargs.get('wd', None)
     return runto(clean(cmd, wd), **kwargs)
@@ -75,6 +81,17 @@ def runto(cmd, wd=None, stderr=None, verbose=False, echo=True, known_as=None, ec
             raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.')
         return result
     return next
+
+def run_as_proc(cmd, wd=None, stderr=None, verbose=False, echo=True, known_as=None, echo_output=None):
+    if echo and not verbose:
+        if known_as:
+            print('\033[34m' + known_as + '\033[0m', file=sys.stderr) # ]]
+        else:
+            print('\033[34m' + abbrev(cmd) + '\033[0m', file=sys.stderr) # ]]
+    elif echo:
+        print('\033[34m' + str(cmd) + ' (in ' + str(wd) + ')' + '\033[0m', file=sys.stderr) # ]]
+    stdout_arg = None if echo_output else PIPE
+    return Popen(cmd, stdin=PIPE, stdout=stdout_arg, stderr=stderr, cwd=(str(wd) if wd!=None else None))
 
 def runtty(cmd, wd=None, verbose=False, echo=True):
     if echo and not verbose:
