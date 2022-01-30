@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name       = 'ellbur-easyrun',
-    version    = '0.128',
+    version    = '0.129',
     py_modules = ['ellbureasyrun']
 )
 
