@@ -78,7 +78,7 @@ def runto(cmd, wd=None, stderr=None, verbose=False, echo=True, known_as=None, ec
         result = f(proc)
         status = proc.wait()
         if status != 0:
-            raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.')
+            raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.', status, proc)
         return result
     return next
 
@@ -103,14 +103,14 @@ def runtty(cmd, wd=None, verbose=False, echo=True):
     except OSError as e:
         if e.errno == 2:
             if len(cmd) > 0:
-                raise RunFailed('Could not find %s' % (cmd[0],))
+                raise RunFailed('Could not find %s' % (cmd[0],), None, None)
             else:
-                raise RunFailed('Empty command failed to run')
+                raise RunFailed('Empty command failed to run', None, None)
         else:
             raise e
     status = proc.wait()
     if status != 0:
-        raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.')
+        raise RunFailed(' '.join(cmd) + ' returned ' + str(status) + ' exit status.', status, proc)
 
 def abbrev(cmd):
     return p(cmd[0]).name + ' ... ' + ' '.join(p(_).name
@@ -126,9 +126,11 @@ def startswithunicode(string, prefix):
             return False
 
 class RunFailed(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, code, proc):
         Exception.__init__(self)
         self.msg = msg
+        self.code = code
+        self.proc = proc
     def __repr__(self): return self.msg
     def __str__(self): return self.msg
     
